@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>인체드로잉 · 2학기 과목 소개</title>
 <style>
   :root{
@@ -23,7 +24,7 @@
     font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
     line-height:1.75;
     -webkit-font-smoothing:antialiased;
-    min-width:1180px;
+    overflow-x:hidden;
   }
 
   /* ── 상단 고정 네비 ── */
@@ -171,6 +172,62 @@
   .faq p{margin-top:14px;margin-bottom:0;font-size:14px;}
 
   footer{padding:56px 0 0;font-size:13px;color:var(--ink-faint);}
+
+  /* ══════════ 반응형 ══════════ */
+  @media (max-width: 900px){
+    .navwrap{padding:0 24px;}
+    .wrap{padding:0 24px 100px;}
+    header{height:200px;}
+    h1{font-size:32px;}
+    .credit{max-width:340px;}
+    .cols{grid-template-columns:1fr;gap:20px;}
+    .cols .side{position:static;top:auto;padding-top:0;}
+    .goals{grid-template-columns:repeat(2,1fr);}
+    .eval{grid-template-columns:repeat(2,1fr);gap:20px;}
+    .kit{grid-template-columns:1fr;gap:36px;}
+  }
+
+  @media (max-width: 720px){
+    /* 주차별 계획 표 → 카드형으로 전환 */
+    table{border-top:1px solid var(--line);}
+    thead{display:none;}
+    table, tbody, tr, td{display:block;width:auto;}
+    tbody tr{border:1px solid var(--line);border-top:none;padding:18px 18px 16px;}
+    tbody td{padding:0;border-bottom:none;max-width:none;}
+    td.wk{font-size:11px;color:var(--ink-faint);letter-spacing:.1em;margin-bottom:8px;padding-top:0;}
+    td.wk::before{content:"WEEK ";}
+    td.tp{font-size:17px;width:auto;margin-bottom:12px;}
+    td.dt, td.as{font-size:13px;width:auto;padding-top:10px;margin-top:10px;border-top:1px solid var(--line);}
+    td.dt::before, td.as::before{
+      content:"모델 실기";display:block;font-size:10px;letter-spacing:.12em;
+      text-transform:uppercase;color:var(--ink-faint);margin-bottom:4px;
+    }
+    td.as::before{content:"캐릭터 과제";}
+    td.dt[colspan]::before{content:"내용";}
+  }
+
+  @media (max-width: 560px){
+    :root{--nav-h:56px;}
+    .navwrap{padding:0 16px;}
+    .navwrap .brand span{display:none;}
+    .navlinks{gap:14px;}
+    .navlinks a{font-size:11px;}
+    .wrap{padding:0 18px 70px;}
+    header{height:auto;min-height:190px;}
+    .header-bg .bg-half.photo{background-size:cover;background-position:center 18%;}
+    .header-content{padding:18px 20px 16px;}
+    h1{font-size:25px;gap:8px;flex-wrap:wrap;}
+    h1 em{font-size:.42em;}
+    .eyebrow{font-size:10px;margin-bottom:8px;}
+    .meta{flex-direction:column;gap:6px;margin-top:12px;}
+    .credit{display:none;}
+    .lead{font-size:18px;}
+    section{padding:56px 0;}
+    h2{font-size:12px;margin-bottom:28px;}
+    .goals{grid-template-columns:1fr;}
+    .eval{grid-template-columns:1fr;gap:16px;}
+    .ev .pct{font-size:36px;}
+  }
 </style>
 </head>
 <body>
