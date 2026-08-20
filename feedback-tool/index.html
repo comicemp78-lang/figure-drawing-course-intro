@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>크로키 골격 피드백 (개인용)</title>
+<style>
+  :root {
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 16px 80px;
+    color: #1a1a1a;
+    background: #fff;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 8px; }
+  .subtitle { font-size: 0.9rem; color: #555; margin: 0 0 24px; }
+  section { margin-bottom: 24px; }
+  .card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+    background: #fafafa;
+  }
+  label { font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 6px; }
+  input[type="password"], input[type="text"] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  input[type="file"] { font-size: 0.85rem; }
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .btn-primary { background: #111; color: #fff; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary { background: #e5e5e5; color: #111; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .key-status { font-size: 0.8rem; color: #16a34a; }
+  .key-status.missing { color: #dc2626; }
+  #preview-img { max-height: 420px; width: auto; border: 1px solid #ddd; border-radius: 6px; margin-top: 12px; display: none; }
+  #overlay-canvas { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 6px; }
+  .error { color: #dc2626; font-size: 0.85rem; margin-top: 8px; }
+  .disclaimer { font-size: 0.75rem; color: #777; margin-bottom: 12px; }
+  .summary-box { border: 1px solid #ddd; border-radius: 8px; padding: 14px; background: #fafafa; }
+  .summary-box h2 { font-size: 1rem; margin: 0 0 6px; }
+  .summary-box p { font-size: 0.9rem; margin: 0; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.75rem; color: #555; margin-top: 8px; }
+  .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  ul.feedback-list { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .feedback-item { border: 1px solid #ddd; border-radius: 8px; padding: 12px; font-size: 0.88rem; }
+  .feedback-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .feedback-head .region { font-weight: 600; }
+  .badge { font-size: 0.72rem; border-radius: 999px; padding: 2px 8px; border: 1px solid; background: rgba(255,255,255,0.6); }
+  .quality-well_placed { background: #dcfce7; border-color: #86efac; color: #166534; }
+  .quality-minor_deviation { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+  .quality-needs_correction { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+  .quality-not_attempted { background: #f3f4f6; border-color: #d1d5db; color: #4b5563; }
+  #details-toggle { background: none; border: none; color: #1d4ed8; text-decoration: underline; padding: 0; font-size: 0.85rem; }
+  #details-body { margin-top: 8px; border: 1px solid #ddd; border-radius: 8px; padding: 12px; background: #fafafa; font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px; }
+  #details-body p { margin: 0; }
+  #status-line { font-size: 0.85rem; color: #555; margin-top: 8px; }
+  #results-section { display: none; border-top: 1px solid #ddd; padding-top: 20px; }
+</style>
+</head>
+<body>
+
+<h1>크로키 골격 피드백 (개인용)</h1>
+<p class="subtitle">
+  크로키 위에 골격을 그린 과제물 이미지를 올리면, 골격이 인체 포즈에 자연스럽게 배치되었는지 부위별로 피드백을 드립니다.
+  이 페이지는 서버 없이 브라우저에서 Claude API를 직접 호출합니다 — 본인의 API 키를 아래에 입력하세요.
+</p>
+
+<section class="card">
+  <label for="api-key-input">Anthropic API 키</label>
+  <div class="row">
+    <input type="password" id="api-key-input" placeholder="sk-ant-..." style="flex:1; min-width:200px;" />
+    <button class="btn-secondary" id="save-key-btn">저장</button>
+    <button class="btn-secondary" id="clear-key-btn">지우기</button>
+  </div>
+  <p id="key-status" class="key-status missing">키가 저장되어 있지 않습니다. 이 브라우저에만 저장되며 외부로 전송되지 않습니다.</p>
+</section>
+
+<section>
+  <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" />
+  <img id="preview-img" alt="업로드한 과제물 미리보기" />
+  <div class="row" style="margin-top:12px;">
+    <button class="btn-primary" id="analyze-btn" disabled>분석하기</button>
+  </div>
+  <p id="status-line"></p>
+  <p class="error" id="error-line" style="display:none;"></p>
+</section>
+
+<section id="results-section">
+  <p class="disclaimer">이 피드백은 숙련된 조교의 시각적 코멘트에 가까우며, 픽셀 단위 정밀 채점이 아닙니다.</p>
+
+  <div class="summary-box">
+    <h2>종합 코멘트</h2>
+    <p id="overall-summary"></p>
+  </div>
+
+  <div style="margin-top:16px;">
+    <canvas id="overlay-canvas"></canvas>
+    <div class="legend">
+      <span><span class="legend-dot" style="background:#16a34a;"></span>잘 배치됨</span>
+      <span><span class="legend-dot" style="background:#d97706;"></span>약간 어긋남</span>
+      <span><span class="legend-dot" style="background:#dc2626;"></span>수정 필요</span>
+      <span><span class="legend-dot" style="background:#9ca3af;"></span>시도 안 함</span>
+    </div>
+  </div>
+
+  <ul class="feedback-list" id="feedback-list"></ul>
+
+  <div style="margin-top:16px;">
+    <button id="details-toggle">이미지를 이렇게 읽었어요 (자세히 보기)</button>
+    <div id="details-body" style="display:none;"></div>
+  </div>
+</section>
+
+<script>
+"use strict";
+
+// ---------- Course rubric (from 골격 / 해부학개론 / 두상해부학 강의 PDF) ----------
+const ANATOMY_RUBRIC = `
+[8등신 비례 (골격 PDF)]
+전신을 머리 길이(1등신) 기준 8등분한 그림을 따른다. 이 수업 교재의 8등신 그림에서 확인되는 근사 위치:
+- 어깨선: 약 1등신
+- 팔꿈치: 약 2등신 (팔을 내렸을 때)
+- 손목: 약 3등신
+- 치골/사타구니(신체 정중앙): 약 4등신
+- 무릎: 약 6등신
+- 발목: 약 7.75등신
+상지골(팔뼈)은 상지대(쇄골+견갑골) + 자유상지(상완골, 요골·척골, 손목뼈·손허리뼈·손가락뼈)로 구성.
+하지골은 하지대(관골) + 자유하지(대퇴골, 경골·비골, 발목뼈·발허리뼈·발가락뼈)로 구성.
+
+[척주의 4개 만곡 — "S자 서스펜션" (골격/해부학개론 PDF)]
+척주는 경추(전만) - 흉추(후만) - 요추(전만) - 골반(후만)의 4개 만곡을 가진다.
+이는 직립보행 시 두개골의 무게와 지면 충격을 흡수하기 위해 진화한 구조("아치 구조가 직선 구조보다 중력 분산에 안정적")이며,
+직선 한 줄로 그려진 척주는 이 만곡이 전혀 표현되지 않은 것으로 본다.
+발달 순서: 태아기 C자형(1차 만곡) → 생후 3~9개월 경추 만곡(2차) → 1~3세 기립과 함께 요추 만곡(2차) 순으로 완성된다.
+
+[골반 경사 (골격 PDF)]
+해부학적 자세에서 골반 경사(수평선 대비)는 약 60도이며, 골반 앞쪽에 치골, 뒤쪽에 천골·미골이 위치한다.
+여성 골반은 남성보다 앞쪽으로 더 기울어져(전방 경사) 요추 만곡이 더 깊고 역동적으로 나타나는 경향이 있다(해부학개론 PDF).
+
+[성별 형태학적 차이 — Gender Morphology Matrix (해부학개론 PDF)]
+그려진 인체가 남성/여성 특징을 드러낼 경우 다음을 참고한다(대략적 경향이며 절대 규칙은 아니다):
+- 흉곽: 남성은 가슴우리 각(하단 늑골각)이 약 90도로 폭이 넓고, 여성은 약 60도로 아래로 좁아진다.
+- 골반: 남성은 세로로 길고 깔때기형으로 좁으며, 여성은 가로 폭이 넓고 납작하며 둥글다.
+- 흉곽-골반 수직 정렬: 여성은 흉곽에서 골반으로 내린 수직선이 골반 폭 때문에 뚜렷한 S자 흐름을 만들고, 남성은 거의 일직선에 가깝다.
+주의: 흉곽의 가슴우리 각도(90도/60도, 성별 비교)는 위 [골반 경사]의 60도(해부학적 골반-수평선 경사, 성별과 무관)와 서로 다른 수치이므로 혼동하지 않는다.
+
+[표면에서 확인 가능한 뼈 랜드마크 (해부학개론 PDF)]
+살이 찌거나 근육이 발달해도 위치가 변하지 않는 기준점들:
+전면 — 빗장뼈(쇄골), 복장뼈(흉골), 골반의 위앞엉덩가시(전상장골극), 무릎뼈(슬개골), 정강뼈(경골) 앞모서리.
+후면 — 어깨뼈(견갑골) 가시와 안쪽 모서리, 척추뼈가시돌기, 팔꿈치머리, 엉치뼈(천골).
+복부-다리 경계의 살고랑 주름(서혜부 인대선)은 위앞엉덩가시에서 두덩뼈(치골)로 이어지며, 골반이 좁을수록 각도가 가파르고 넓을수록 완만하다.
+
+[관절 종류와 움직임의 자연스러움 (해부학개론 PDF — 6대 윤활관절)]
+- 평면관절(미끄러짐만 허용): 손목뼈 사이.
+- 경첩관절(한쪽 방향으로만 굽힘/폄, 과신전 불가): 팔꿈치, 무릎.
+- 차축관절(제자리 회전): 팔오금(요척골) 관절.
+- 타원관절(굽힘/폄·벌림/모음, 회전 불가): 손가락 관절.
+- 안장관절: 엄지 손목허리관절.
+- 절구관절(가장 넓은 다축/회전 운동): 어깨관절, 엉덩관절(고관절).
+근육은 뼈를 미는 것이 아니라 수축하며 당기는 방식으로 작용하고(길항작용: 굽힘근 수축 시 폄근 이완), 어깨의 상지대(쇄골·견갑골)는 흉곽 위에서 미끄러지듯 움직이며 팔의 가동범위를 넓혀준다.
+
+[골격이 인체 실루엣에 "원활하게 배치"되었는지 판단 기준]
+아래 항목이 부족하면 배치가 부자연스럽다고 본다:
+- 머리: 정수리-턱 두 점으로 1등신 구간이 확정되지 않고 점 하나로 뭉쳐 있는 경우.
+- 척추: 4개 만곡 없이 직선 한 줄인 경우, 또는 정중선(무게중심선)에서 벗어나 꺾인 경우.
+- 어깨대: 쇄골·견갑골 없이 목 옆에 점만 있거나, 흉곽 폭보다 좁게 잡힌 경우.
+- 골반: 좌우 폭(장골능, 고관절) 없이 단일 점으로 처리되어 대퇴골이 한 점에서 갈라지는 경우, 60도 경사가 반영되지 않은 경우.
+- 팔다리: 경첩관절인 팔꿈치·무릎이 과신전되거나, 체중이 실린 다리에서 고관절-무릎-발목이 일직선에서 크게 벗어난 경우.
+`.trim();
+
+// ---------- Schemas (mirrors lib/schemas.ts) ----------
+const LANDMARK_NAMES = [
+  "head_top", "chin", "neck_base",
+  "shoulder_l", "shoulder_r", "elbow_l", "elbow_r", "wrist_l", "wrist_r",
+  "spine_c7", "spine_mid", "sacrum",
+  "pelvis_l", "pelvis_r", "hip_l", "hip_r",
+  "knee_l", "knee_r", "ankle_l", "ankle_r",
+];
+const REGION_NAMES = ["head_neck", "spine", "shoulder_girdle", "arms", "pelvis", "legs"];
+
+const landmarkSetSchema = {
+  type: "array",
+  description: "정확히 다음 20개 관절 각각에 대해 하나씩 항목을 넣으세요: " + LANDMARK_NAMES.join(", "),
+  items: {
+    type: "object",
+    properties: {
+      name: { type: "string", enum: LANDMARK_NAMES },
+      x: { type: "number", description: "0-1 normalized horizontal position (fraction of image width)" },
+      y: { type: "number", description: "0-1 normalized vertical position (fraction of image height)" },
+      confidence: { type: "string", enum: ["high", "medium", "low", "not_drawn"] },
+    },
+    required: ["name", "x", "y", "confidence"],
+    additionalProperties: false,
+  },
+};
+
+const POSE_ESTIMATION_SCHEMA = {
+  type: "object",
+  properties: {
+    image_understanding: {
+      type: "object",
+      properties: {
+        orientation: { type: "string", enum: ["standing", "sitting", "leaning", "reclining", "other"] },
+        view_angle: { type: "string", enum: ["front", "back", "side", "three_quarter"] },
+        layer_disambiguation_notes: { type: "string" },
+      },
+      required: ["orientation", "view_angle", "layer_disambiguation_notes"],
+      additionalProperties: false,
+    },
+    reference_pose: {
+      type: "object",
+      properties: {
+        landmarks: landmarkSetSchema,
+        spine_curve_type: { type: "string", enum: ["전만", "후만", "중립", "기타"] },
+        pelvis_tilt_deg_estimate: { type: "number" },
+        weight_bearing_leg: { type: "string", enum: ["left", "right", "both", "seated_no_weight"] },
+        reasoning: { type: "string" },
+      },
+      required: ["landmarks", "spine_curve_type", "pelvis_tilt_deg_estimate", "weight_bearing_leg", "reasoning"],
+      additionalProperties: false,
+    },
+    student_drawn_skeleton: {
+      type: "object",
+      properties: {
+        detected: { type: "boolean" },
+        landmarks: landmarkSetSchema,
+        notable_omissions: { type: "array", items: { type: "string" } },
+      },
+      required: ["detected", "landmarks", "notable_omissions"],
+      additionalProperties: false,
+    },
+  },
+  required: ["image_understanding", "reference_pose", "student_drawn_skeleton"],
+  additionalProperties: false,
+};
+
+const CRITIQUE_SCHEMA = {
+  type: "object",
+  properties: {
+    region_feedback: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          region: { type: "string", enum: REGION_NAMES },
+          placement_quality: { type: "string", enum: ["well_placed", "minor_deviation", "needs_correction", "not_attempted"] },
+          comment: { type: "string" },
+          reference_landmark_ids: { type: "array", items: { type: "string", enum: LANDMARK_NAMES } },
+        },
+        required: ["region", "placement_quality", "comment", "reference_landmark_ids"],
+        additionalProperties: false,
+      },
+    },
+    overall_summary: { type: "string" },
+    corrected_overlay_landmarks: landmarkSetSchema,
+  },
+  required: ["region_feedback", "overall_summary", "corrected_overlay_landmarks"],
+  additionalProperties: false,
+};
+
+const BONE_CONNECTIONS = [
+  { from: "head_top", to: "chin", region: "head_neck" },
+  { from: "chin", to: "neck_base", region: "head_neck" },
+  { from: "neck_base", to: "spine_c7", region: "spine" },
+  { from: "spine_c7", to: "spine_mid", region: "spine" },
+  { from: "spine_mid", to: "sacrum", region: "spine" },
+  { from: "spine_c7", to: "shoulder_l", region: "shoulder_girdle" },
+  { from: "spine_c7", to: "shoulder_r", region: "shoulder_girdle" },
+  { from: "shoulder_l", to: "shoulder_r", region: "shoulder_girdle" },
+  { from: "shoulder_l", to: "elbow_l", region: "arms" },
+  { from: "elbow_l", to: "wrist_l", region: "arms" },
+  { from: "shoulder_r", to: "elbow_r", region: "arms" },
+  { from: "elbow_r", to: "wrist_r", region: "arms" },
+  { from: "sacrum", to: "pelvis_l", region: "pelvis" },
+  { from: "sacrum", to: "pelvis_r", region: "pelvis" },
+  { from: "pelvis_l", to: "pelvis_r", region: "pelvis" },
+  { from: "pelvis_l", to: "hip_l", region: "pelvis" },
+  { from: "pelvis_r", to: "hip_r", region: "pelvis" },
+  { from: "hip_l", to: "knee_l", region: "legs" },
+  { from: "knee_l", to: "ankle_l", region: "legs" },
+  { from: "hip_r", to: "knee_r", region: "legs" },
+  { from: "knee_r", to: "ankle_r", region: "legs" },
+];
+
+const PLACEMENT_LABEL = {
+  well_placed: "잘 배치됨", minor_deviation: "약간 어긋남",
+  needs_correction: "수정 필요", not_attempted: "시도 안 함",
+};
+const PLACEMENT_CANVAS_COLOR = {
+  well_placed: "#16a34a", minor_deviation: "#d97706",
+  needs_correction: "#dc2626", not_attempted: "#9ca3af",
+};
+const REGION_LABEL = {
+  head_neck: "머리/목", spine: "척추", shoulder_girdle: "어깨대",
+  arms: "팔", pelvis: "골반", legs: "다리",
+};
+
+// ---------- API key storage ----------
+const KEY_STORAGE_KEY = "anatomy_feedback_api_key";
+const apiKeyInput = document.getElementById("api-key-input");
+const keyStatus = document.getElementById("key-status");
+
+function loadApiKey() {
+  const saved = localStorage.getItem(KEY_STORAGE_KEY);
+  if (saved) {
+    apiKeyInput.value = saved;
+    keyStatus.textContent = "키가 이 브라우저에 저장되어 있습니다.";
+    keyStatus.classList.remove("missing");
+  } else {
+    keyStatus.textContent = "키가 저장되어 있지 않습니다. 이 브라우저에만 저장되며 외부로 전송되지 않습니다.";
+    keyStatus.classList.add("missing");
+  }
+}
+document.getElementById("save-key-btn").addEventListener("click", () => {
+  const val = apiKeyInput.value.trim();
+  if (!val) return;
+  localStorage.setItem(KEY_STORAGE_KEY, val);
+  loadApiKey();
+});
+document.getElementById("clear-key-btn").addEventListener("click", () => {
+  localStorage.removeItem(KEY_STORAGE_KEY);
+  apiKeyInput.value = "";
+  loadApiKey();
+});
+loadApiKey();
+
+// ---------- Claude API calls (direct browser fetch) ----------
+const MODEL = "claude-opus-5";
+const API_URL = "https://api.anthropic.com/v1/messages";
+
+async function callClaude(apiKey, userContent, schema) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 16000,
+      system: [
+        {
+          type: "text",
+          text:
+            "당신은 인체 드로잉 수업의 숙련된 조교입니다. 학생이 모델을 보고 그린 크로키 위에 골격을 겹쳐 그린 과제물을 분석합니다. " +
+            "아래는 이 수업에서 가르치는 인체 비례/해부학 기준입니다. 반드시 이 기준의 용어와 수치를 근거로 판단하세요.\n\n" +
+            ANATOMY_RUBRIC,
+          cache_control: { type: "ephemeral" },
+        },
+      ],
+      messages: [{ role: "user", content: userContent }],
+      output_config: { format: { type: "json_schema", schema }, effort: "medium" },
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API 오류 (${res.status}): ${text}`);
+  }
+  const data = await res.json();
+  const textBlock = data.content.find((b) => b.type === "text");
+  if (!textBlock) throw new Error("응답에서 텍스트 블록을 찾지 못했습니다.");
+  try {
+    return JSON.parse(textBlock.text);
+  } catch (e) {
+    throw new Error("구조화된 응답을 파싱하지 못했습니다: " + e.message);
+  }
+}
+
+function imageBlock(base64, mediaType) {
+  return { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } };
+}
+
+async function estimatePose(apiKey, base64, mediaType) {
+  return callClaude(
+    apiKey,
+    [
+      imageBlock(base64, mediaType),
+      {
+        type: "text",
+        text:
+          "이 이미지에는 학생이 그린 인체 크로키(윤곽선/실루엣)와 그 위에 학생이 그린 골격(뼈대) 시도가 함께 들어 있습니다. " +
+          "두 레이어에 색상 구분이 없을 수 있습니다(둘 다 검은 선일 수 있음) — 선의 형태(뼈/관절 모양 vs 몸 윤곽 모양), 위치, 굵기 등으로 구분하세요.\n\n" +
+          "다음을 수행하세요:\n" +
+          "1) 크로키 실루엣이 암시하는 포즈(서기/앉기/기대기/기타, 시점)를 먼저 분류하세요.\n" +
+          "2) 그 포즈에 대해 이 수업의 비례 기준에 근거한 '정답에 가까운' 관절 랜드마크 위치를 추정하세요(학생이 그린 골격을 보기 전에 독립적으로 추정한다고 생각하고 작업하세요).\n" +
+          "3) 그 다음 학생이 실제로 그린 골격선의 랜드마크 위치를 별도로 읽어내세요(그리지 않은 관절은 confidence를 not_drawn으로 표시).\n\n" +
+          "모든 좌표는 이미지 좌측 상단을 (0,0), 우측 하단을 (1,1)로 하는 0~1 정규화 좌표로 답하세요.",
+      },
+    ],
+    POSE_ESTIMATION_SCHEMA
+  );
+}
+
+async function critique(apiKey, base64, mediaType, pose) {
+  return callClaude(
+    apiKey,
+    [
+      imageBlock(base64, mediaType),
+      {
+        type: "text",
+        text:
+          "같은 이미지에 대해 다음과 같이 이미 분석을 마쳤습니다(JSON):\n\n" +
+          JSON.stringify(pose) +
+          "\n\n" +
+          "위 분석의 reference_pose.landmarks(수업 기준에 맞는 정답에 가까운 랜드마크)와 " +
+          "student_drawn_skeleton.landmarks(학생이 실제로 그린 골격)를 비교하세요.\n\n" +
+          "채점 기준: 픽셀 단위 오차가 아니라, '학생이 그린 골격이 이 인체가 취하고 있는 포즈/무게중심에 자연스럽고 원활하게 배치되어 있는지'를 " +
+          "머리/목, 척추, 어깨대, 팔, 골반, 다리 6개 부위별로 평가하세요. 각 부위 코멘트는 이 수업의 용어(8등신, 전만/후만, 골반 경사 등)를 사용해 " +
+          "학생이 다음에 무엇을 고치면 좋을지 알 수 있도록 구체적으로 쓰세요.\n\n" +
+          "마지막으로 corrected_overlay_landmarks에는 reference_pose 기준으로 화면에 오버레이로 그릴 최종 교정 골격 좌표를 넣으세요.",
+      },
+    ],
+    CRITIQUE_SCHEMA
+  );
+}
+
+// ---------- Image handling ----------
+const MAX_EDGE = 1500;
+async function resizeToJpeg(file) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+  const width = Math.round(bitmap.width * scale);
+  const height = Math.round(bitmap.height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(bitmap, 0, 0, width, height);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("이미지 변환 실패"))), "image/jpeg", 0.85);
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// ---------- Overlay drawing ----------
+function drawOverlay(imageUrl, landmarks, regionFeedback) {
+  const canvas = document.getElementById("overlay-canvas");
+  const img = new Image();
+  img.onload = () => {
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+
+    const byName = new Map(landmarks.map((l) => [l.name, l]));
+    const qualityByRegion = new Map(regionFeedback.map((rf) => [rf.region, rf.placement_quality]));
+    const point = (x, y) => [x * canvas.width, y * canvas.height];
+
+    for (const bone of BONE_CONNECTIONS) {
+      const from = byName.get(bone.from);
+      const to = byName.get(bone.to);
+      if (!from || !to) continue;
+      const q = qualityByRegion.get(bone.region);
+      ctx.strokeStyle = q ? PLACEMENT_CANVAS_COLOR[q] : PLACEMENT_CANVAS_COLOR.not_attempted;
+      ctx.lineWidth = Math.max(2, canvas.width * 0.005);
+      const [x1, y1] = point(from.x, from.y);
+      const [x2, y2] = point(to.x, to.y);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    for (const landmark of landmarks) {
+      const bone = BONE_CONNECTIONS.find((b) => b.from === landmark.name || b.to === landmark.name);
+      const q = bone ? qualityByRegion.get(bone.region) : undefined;
+      ctx.fillStyle = q ? PLACEMENT_CANVAS_COLOR[q] : PLACEMENT_CANVAS_COLOR.not_attempted;
+      const [x, y] = point(landmark.x, landmark.y);
+      ctx.beginPath();
+      ctx.arc(x, y, Math.max(3, canvas.width * 0.007), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  };
+  img.src = imageUrl;
+}
+
+// ---------- UI wiring ----------
+const fileInput = document.getElementById("file-input");
+const previewImg = document.getElementById("preview-img");
+const analyzeBtn = document.getElementById("analyze-btn");
+const statusLine = document.getElementById("status-line");
+const errorLine = document.getElementById("error-line");
+const resultsSection = document.getElementById("results-section");
+const overallSummaryEl = document.getElementById("overall-summary");
+const feedbackListEl = document.getElementById("feedback-list");
+const detailsToggle = document.getElementById("details-toggle");
+const detailsBody = document.getElementById("details-body");
+
+let pendingFile = null;
+let previewUrl = null;
+
+fileInput.addEventListener("change", (e) => {
+  pendingFile = e.target.files?.[0] ?? null;
+  errorLine.style.display = "none";
+  resultsSection.style.display = "none";
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  if (pendingFile) {
+    previewUrl = URL.createObjectURL(pendingFile);
+    previewImg.src = previewUrl;
+    previewImg.style.display = "block";
+    analyzeBtn.disabled = false;
+  } else {
+    previewImg.style.display = "none";
+    analyzeBtn.disabled = true;
+  }
+});
+
+detailsToggle.addEventListener("click", () => {
+  const show = detailsBody.style.display === "none";
+  detailsBody.style.display = show ? "flex" : "none";
+  detailsToggle.textContent = show ? "이미지 분석 상세 접기" : "이미지를 이렇게 읽었어요 (자세히 보기)";
+});
+
+analyzeBtn.addEventListener("click", async () => {
+  const apiKey = localStorage.getItem(KEY_STORAGE_KEY) || apiKeyInput.value.trim();
+  if (!apiKey) {
+    errorLine.textContent = "먼저 API 키를 입력하고 저장하세요.";
+    errorLine.style.display = "block";
+    return;
+  }
+  if (!pendingFile) return;
+
+  analyzeBtn.disabled = true;
+  errorLine.style.display = "none";
+  resultsSection.style.display = "none";
+
+  try {
+    statusLine.textContent = "이미지 준비 중...";
+    const jpegBlob = await resizeToJpeg(pendingFile);
+    const base64 = await blobToBase64(jpegBlob);
+
+    statusLine.textContent = "1/2 포즈 추정 중... (30초~1분 소요)";
+    const pose = await estimatePose(apiKey, base64, "image/jpeg");
+
+    statusLine.textContent = "2/2 피드백 생성 중... (30초~1분 소요)";
+    const feedback = await critique(apiKey, base64, "image/jpeg", pose);
+
+    statusLine.textContent = "완료";
+    renderResults(pose, feedback);
+  } catch (err) {
+    errorLine.textContent = err instanceof Error ? err.message : String(err);
+    errorLine.style.display = "block";
+    statusLine.textContent = "";
+  } finally {
+    analyzeBtn.disabled = false;
+  }
+});
+
+function renderResults(pose, feedback) {
+  resultsSection.style.display = "block";
+  overallSummaryEl.textContent = feedback.overall_summary;
+
+  feedbackListEl.innerHTML = "";
+  for (const rf of feedback.region_feedback) {
+    const li = document.createElement("li");
+    li.className = "feedback-item quality-" + rf.placement_quality;
+    li.innerHTML =
+      '<div class="feedback-head"><span class="region">' +
+      (REGION_LABEL[rf.region] || rf.region) +
+      '</span><span class="badge quality-' + rf.placement_quality + '">' +
+      (PLACEMENT_LABEL[rf.placement_quality] || rf.placement_quality) +
+      "</span></div><p>" + rf.comment + "</p>";
+    feedbackListEl.appendChild(li);
+  }
+
+  drawOverlay(previewUrl, feedback.corrected_overlay_landmarks, feedback.region_feedback);
+
+  detailsBody.style.display = "none";
+  detailsToggle.textContent = "이미지를 이렇게 읽었어요 (자세히 보기)";
+  const omissions = pose.student_drawn_skeleton.notable_omissions;
+  detailsBody.innerHTML =
+    "<p><b>추정 포즈:</b> " + pose.image_understanding.orientation + " / " + pose.image_understanding.view_angle + "</p>" +
+    "<p><b>레이어 구분 방식:</b> " + pose.image_understanding.layer_disambiguation_notes + "</p>" +
+    "<p><b>척추 만곡:</b> " + pose.reference_pose.spine_curve_type +
+    " / <b>골반 경사:</b> " + pose.reference_pose.pelvis_tilt_deg_estimate + "도" +
+    " / <b>체중 지지 다리:</b> " + pose.reference_pose.weight_bearing_leg + "</p>" +
+    "<p>" + pose.reference_pose.reasoning + "</p>" +
+    (omissions.length ? "<p><b>미표현 관절:</b> " + omissions.join(", ") + "</p>" : "");
+}
+</script>
+</body>
+</html>

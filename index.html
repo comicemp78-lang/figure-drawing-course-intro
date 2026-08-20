@@ -162,6 +162,50 @@
   .note{margin-top:44px;padding:22px 26px;background:var(--paper-2);border-left:2px solid var(--accent);font-size:14px;color:var(--ink-soft);max-width:820px;}
   .note b{color:var(--ink);font-weight:600;}
 
+  /* ── 오리엔테이션 PDF 링크 ── */
+  .btn-pdf{
+    display:inline-flex;align-items:center;gap:14px;margin-top:8px;
+    padding:16px 22px;background:var(--paper);border:1px solid var(--line);
+    text-decoration:none;color:var(--ink);font-size:14px;letter-spacing:.01em;
+    transition:border-color .2s ease, background .2s ease;
+  }
+  .btn-pdf:hover{border-color:var(--accent);background:var(--paper-2);}
+  .btn-pdf-icon{
+    flex:none;font-size:11px;font-weight:700;letter-spacing:.04em;
+    color:var(--paper);background:var(--accent);padding:4px 8px;
+  }
+
+  /* ── 관리자 모드 (공지·이메일 템플릿 생성기) ── */
+  .admin-panel{border:1px solid var(--line);}
+  .admin-panel summary{
+    cursor:pointer;list-style:none;padding:22px 26px;font-size:16px;font-weight:500;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .admin-panel summary::-webkit-details-marker{display:none;}
+  .admin-panel summary::after{content:"열기 +";font-size:13px;letter-spacing:.04em;color:var(--ink-faint);font-weight:400;}
+  .admin-panel[open] summary::after{content:"접기 –";}
+  .admin-panel[open] summary{color:var(--accent);border-bottom:1px solid var(--line);}
+  .admin-body{padding:28px 26px 32px;}
+  .admin-gate-row{display:flex;gap:10px;max-width:420px;}
+  .admin-gate-row input{
+    flex:1;padding:12px 14px;border:1px solid var(--line);background:var(--paper);
+    color:var(--ink);font-size:14px;
+  }
+  .admin-gate-row input:focus{outline:none;border-color:var(--accent);}
+  .admin-gate-row .btn-pdf{margin-top:0;}
+  .field-error{margin:10px 0 0;min-height:18px;color:#9c2f12;font-size:13px;}
+  .admin-tools-bar{display:flex;justify-content:flex-end;margin-bottom:24px;}
+  .admin-tools-bar .btn-pdf{margin-top:0;padding:10px 16px;}
+  .admin-tool{margin-bottom:36px;}
+  .admin-tool:last-child{margin-bottom:0;}
+  .admin-frame-bar{
+    display:flex;justify-content:space-between;align-items:center;gap:16px;
+    margin-bottom:14px;font-size:13px;color:var(--ink-soft);
+  }
+  .admin-frame{
+    width:100%;height:min(85vh,1100px);border:1px solid var(--line);background:#fff;
+  }
+
   /* ── FAQ ── */
   .faq{max-width:820px;}
   .faq details{border-bottom:1px solid var(--line);padding:20px 0;}
@@ -238,10 +282,12 @@
     <div class="brand">인체드로잉<span>연성대학교 · 2학기</span></div>
     <div class="navlinks">
       <a href="#intro" data-target="intro">소개</a>
+      <a href="#orientation" data-target="orientation">오리엔테이션</a>
       <a href="#curriculum" data-target="curriculum">커리큘럼</a>
       <a href="#eval" data-target="eval">평가</a>
       <a href="#kit" data-target="kit">준비물</a>
       <a href="#faq" data-target="faq">FAQ</a>
+      <a href="#admin" data-target="admin">관리자 모드</a>
     </div>
   </div>
 </nav>
@@ -279,6 +325,20 @@
           <div class="goal"><span class="no">03</span><strong>캐릭터 각색</strong><span class="d">모델의 구조를 유지하며 자신의 캐릭터로 재구성합니다.</span></div>
           <div class="goal"><span class="no">04</span><strong>일관성</strong><span class="d">한 학기 동안 자신만의 캐릭터 세계관을 완성해갑니다.</span></div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="orientation">
+    <div class="cols">
+      <div class="side">Week 01</div>
+      <div>
+        <h2>오리엔테이션</h2>
+        <p class="lead">1주차 오리엔테이션에서 다룬 학기 운영 방식과 진행 로드맵 자료입니다.</p>
+        <a class="btn-pdf" href="comic-production-week1-orientation.pdf" target="_blank" rel="noopener">
+          <span class="btn-pdf-icon">PDF</span>
+          <span>1주차 오리엔테이션 자료 보기 · 다운로드</span>
+        </a>
       </div>
     </div>
   </section>
@@ -374,6 +434,40 @@
     </div>
   </section>
 
+  <section id="admin">
+    <h2>관리자 모드</h2>
+    <details class="admin-panel">
+      <summary>관리자 모드 열기 — 교수자 도구</summary>
+      <div class="admin-body">
+        <p class="hint">담당 교수만 사용하는 도구 모음입니다. 비밀번호를 입력해 주세요.</p>
+
+        <div class="admin-gate" id="adminGate">
+          <div class="admin-gate-row">
+            <input type="password" id="adminPassword" placeholder="비밀번호" autocomplete="off" />
+            <button type="button" class="btn-pdf" id="adminEnter"><span class="btn-pdf-icon">GO</span><span>입장</span></button>
+          </div>
+          <p class="field-error" id="adminError" role="alert"></p>
+        </div>
+
+        <div class="admin-tools" id="adminTools" hidden>
+          <div class="admin-tools-bar">
+            <button type="button" class="btn-pdf" id="adminLock"><span class="btn-pdf-icon">LOCK</span><span>잠그기</span></button>
+          </div>
+
+          <div class="admin-tool">
+            <div class="admin-frame-bar"><span>공지·이메일 템플릿 생성기 (모의 실습 도구 — 실제 발송 없음)</span></div>
+            <iframe class="admin-frame" data-src="admin-tool/index.html" title="공지·이메일 템플릿 생성기" loading="lazy"></iframe>
+          </div>
+
+          <div class="admin-tool">
+            <div class="admin-frame-bar"><span>크로키 골격 피드백 (개인용 — 본인 Anthropic API 키 필요, 비용 본인 부담)</span></div>
+            <iframe class="admin-frame" data-src="feedback-tool/index.html" title="크로키 골격 피드백" loading="lazy"></iframe>
+          </div>
+        </div>
+      </div>
+    </details>
+  </section>
+
   <footer>
     연성대학교 · 인체드로잉 2학기 강의 안내 — 세부 일정 및 스토리 테마는 수업 진행 상황에 따라 조정될 수 있습니다.
   </footer>
@@ -408,6 +502,44 @@
   }
   document.addEventListener('scroll', updateActive, {passive:true});
   updateActive();
+</script>
+
+<script>
+  // 관리자 모드 — 비밀번호 게이트 (정적 페이지라 실제 인증이 아니라 눈가림용입니다)
+  // 비밀번호를 바꾸려면 아래 값만 수정하세요.
+  var ADMIN_PASSWORD = 'yeonsung2026';
+
+  var adminGate = document.getElementById('adminGate');
+  var adminTools = document.getElementById('adminTools');
+  var adminFrames = document.querySelectorAll('#adminTools .admin-frame');
+  var adminPassword = document.getElementById('adminPassword');
+  var adminError = document.getElementById('adminError');
+  var adminEnter = document.getElementById('adminEnter');
+  var adminLock = document.getElementById('adminLock');
+
+  function tryAdminEnter(){
+    if(adminPassword.value === ADMIN_PASSWORD){
+      adminFrames.forEach(function(frame){
+        if(!frame.src){ frame.src = frame.getAttribute('data-src'); }
+      });
+      adminGate.hidden = true;
+      adminTools.hidden = false;
+      adminError.textContent = '';
+    } else {
+      adminError.textContent = '비밀번호가 올바르지 않습니다.';
+    }
+  }
+
+  adminEnter.addEventListener('click', tryAdminEnter);
+  adminPassword.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ tryAdminEnter(); }
+  });
+  adminLock.addEventListener('click', function(){
+    adminFrames.forEach(function(frame){ frame.src = ''; });
+    adminTools.hidden = true;
+    adminGate.hidden = false;
+    adminPassword.value = '';
+  });
 </script>
 </body>
 </html>
